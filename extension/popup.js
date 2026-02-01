@@ -1,4 +1,5 @@
 const scanBtn = document.getElementById("scanBtn");
+const stopBtn = document.getElementById("stopBtn");
 const progressDiv = document.getElementById("progress");
 const progressBar = document.getElementById("progressBar");
 const progressText = document.getElementById("progressText");
@@ -15,11 +16,23 @@ function updateProgressUI(progress, rate) {
   progressText.textContent = `${progress.scanned}/${progress.total} — ${progress.spamFound} spam found${rateStr}`;
 }
 
+function setScanningUI() {
+  scanBtn.disabled = true;
+  scanBtn.textContent = "Scanning...";
+  stopBtn.style.display = "block";
+  progressDiv.style.display = "block";
+  statusDiv.textContent = "";
+}
+
 function showDone(result) {
-  progressBar.style.width = "100%";
-  statusDiv.textContent = `Done. Scanned ${result.scanned} messages, found ${result.spamFound} spam. (${result.avgRate} emails/s)`;
+  const prefix = result.cancelled ? "Stopped" : "Done";
+  progressBar.style.width = result.cancelled
+    ? Math.round((result.scanned / result.total) * 100) + "%"
+    : "100%";
+  statusDiv.textContent = `${prefix}. Scanned ${result.scanned} messages, found ${result.spamFound} spam. (${result.avgRate} emails/s)`;
   scanBtn.disabled = false;
   scanBtn.textContent = "Scan Current Folder";
+  stopBtn.style.display = "none";
 }
 
 function startPolling() {
@@ -42,10 +55,7 @@ async function restoreState() {
   try {
     const state = await messenger.runtime.sendMessage({ action: "getState" });
     if (state && state.progress) {
-      scanBtn.disabled = true;
-      scanBtn.textContent = "Scanning...";
-      progressDiv.style.display = "block";
-      statusDiv.textContent = "";
+      setScanningUI();
       updateProgressUI(state.progress, state.rate);
       startPolling();
     } else if (state && state.lastResult) {
@@ -56,11 +66,7 @@ async function restoreState() {
 }
 
 scanBtn.addEventListener("click", async () => {
-  scanBtn.disabled = true;
-  scanBtn.textContent = "Scanning...";
-  progressDiv.style.display = "block";
-  statusDiv.textContent = "";
-
+  setScanningUI();
   startPolling();
 
   try {
@@ -70,10 +76,17 @@ scanBtn.addEventListener("click", async () => {
     statusDiv.textContent = `Error: ${err.message}`;
     scanBtn.disabled = false;
     scanBtn.textContent = "Scan Current Folder";
+    stopBtn.style.display = "none";
   }
 
   clearInterval(polling);
   polling = null;
+});
+
+stopBtn.addEventListener("click", async () => {
+  stopBtn.disabled = true;
+  stopBtn.textContent = "Stopping...";
+  await messenger.runtime.sendMessage({ action: "stopScan" });
 });
 
 restoreState();

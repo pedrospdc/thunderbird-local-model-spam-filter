@@ -23,6 +23,7 @@ const CHAT_FORMAT = {
 let scanProgress = null;
 let scanStartTime = null;
 let lastScanResult = null;
+let scanCancelled = false;
 
 async function getSettings() {
   const { settings } = await messenger.storage.local.get("settings");
@@ -268,6 +269,7 @@ async function scanCurrentFolder() {
 
   scanStartTime = Date.now();
   lastScanResult = null;
+  scanCancelled = false;
   scanProgress = { total: allMessages.length, scanned: 0, spamFound: 0 };
 
   // Process messages concurrently (matches OLLAMA_NUM_PARALLEL).
@@ -275,7 +277,7 @@ async function scanCurrentFolder() {
   let idx = 0;
 
   async function worker() {
-    while (idx < allMessages.length) {
+    while (idx < allMessages.length && !scanCancelled) {
       const message = allMessages[idx++];
       try {
         const result = await classifyMessage(message.id, settings);
@@ -299,10 +301,12 @@ async function scanCurrentFolder() {
 
   const totalSec = (Date.now() - scanStartTime) / 1000;
   const avgRate = totalSec > 0 ? (scanProgress.scanned / totalSec).toFixed(1) : "0";
-  const result = { ...scanProgress, avgRate };
+  const cancelled = scanCancelled;
+  const result = { ...scanProgress, avgRate, cancelled };
   lastScanResult = result;
   scanProgress = null;
   scanStartTime = null;
+  scanCancelled = false;
   return result;
 }
 
@@ -310,6 +314,10 @@ async function scanCurrentFolder() {
 messenger.runtime.onMessage.addListener(async (request) => {
   if (request.action === "scanFolder") {
     return await scanCurrentFolder();
+  }
+  if (request.action === "stopScan") {
+    scanCancelled = true;
+    return { ok: true };
   }
   if (request.action === "getProgress") {
     let rate = null;
