@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
   maxBodyChars: 8000,
   logConversations: false,
   systemPrompt:
-    'You are an email spam classifier. Classify as "spam" or "ham". Provide a confidence score from 0.0 to 1.0. HAM (not spam) includes: invoices, receipts, order/shipping confirmations, account notifications, support tickets, service updates, utility reminders, personal messages, and transactional emails. SPAM includes: marketing newsletters, product or service advertisements, promotional offers, e-commerce promotions, unsolicited ads, phishing, scams, fake prizes, and deceptive messages. Any email trying to sell, promote, or advertise a product or service is spam. When in doubt, classify as ham.',
+    'You are an email spam classifier. Classify as "spam" or "ham". Provide a confidence score from 0.0 to 1.0. HAM (not spam) includes: invoices, receipts, order/shipping confirmations, account notifications, support tickets, service updates, utility reminders, personal messages, and transactional emails. SPAM includes: marketing newsletters in any language, product or service advertisements, promotional offers, e-commerce promotions, unsolicited ads, phishing, scams, fake prizes, and deceptive messages. Any email trying to sell, promote, or advertise a product or service is spam. Newsletters in any language are spam, except Substack newsletters which are ham. Use the provided metadata (List-Unsubscribe, Authentication-Results, Reply-To, etc.) as additional classification signals. When in doubt, classify as ham.',
 };
 
 const CHAT_FORMAT = {
@@ -195,6 +195,10 @@ async function classifyMessage(messageId, settings) {
   const header = await messenger.messages.get(messageId);
   const full = await messenger.messages.getFull(messageId);
   let body = extractText(full);
+
+  // Count URLs before truncation
+  const urlCount = (body.match(/https?:\/\//g) || []).length;
+
   // Truncate body — spam signals are in the first few thousand chars.
   // Shorter input = faster inference and less VRAM.
   if (body.length > settings.maxBodyChars) {
@@ -202,7 +206,44 @@ async function classifyMessage(messageId, settings) {
   }
   const from = header.author || "";
   const to = (header.recipients || []).join(", ");
-  const emailText = `From: ${from}\nTo: ${to}\nSubject: ${header.subject || ""}\n\nBody: ${body}`;
+
+  // Build metadata lines
+  const lines = [`From: ${from}`, `To: ${to}`];
+
+  const replyTo = full.headers && full.headers["reply-to"] && full.headers["reply-to"][0];
+  if (replyTo && replyTo !== from) {
+    lines.push(`Reply-To: ${replyTo}`);
+  }
+
+  const ccCount = (header.ccList || []).length;
+  if (ccCount > 0) {
+    lines.push(`CC-Count: ${ccCount}`);
+  }
+
+  lines.push(`Subject: ${header.subject || ""}`);
+  lines.push(`Content-Type: ${full.contentType || "unknown"}`);
+
+  const hasUnsubscribe = full.headers && full.headers["list-unsubscribe"] && full.headers["list-unsubscribe"].length > 0;
+  lines.push(`List-Unsubscribe: ${hasUnsubscribe ? "yes" : "no"}`);
+
+  const authResults = full.headers && full.headers["authentication-results"] && full.headers["authentication-results"][0];
+  if (authResults) {
+    lines.push(`Authentication-Results: ${authResults.slice(0, 200)}`);
+  }
+
+  try {
+    const attachments = await messenger.messages.listAttachments(messageId);
+    if (attachments && attachments.length > 0) {
+      const attStr = attachments.map((a) => `${a.name} (${a.contentType})`).join(", ");
+      lines.push(`Attachments: ${attStr}`);
+    }
+  } catch (_) {}
+
+  lines.push(`URL-Count: ${urlCount}`);
+  lines.push("");
+  lines.push(`Body: ${body}`);
+
+  const emailText = lines.join("\n");
 
   let result;
   if (settings.modelType === "chat") {
