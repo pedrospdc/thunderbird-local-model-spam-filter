@@ -67,9 +67,14 @@ Extension settings (Add-ons Manager → Ollama Spam Filter → Options):
 - **Model Type** — `chat` (structured JSON, default) or `classify` (binary 0/1 models)
 - **Spam Action** — Move to Junk (default), Move to Trash, or Delete Permanently
 - **Confidence Threshold** — 0.0 to 1.0
+- **Concurrency** — number of parallel classification requests, match to `OLLAMA_NUM_PARALLEL` (default: 4)
+- **Max Body Characters** — email body truncation limit (default: 4000)
+- **Context Size** — LLM context window in tokens (default: 8192)
 - **Log classifications** — log email subject and model response to Thunderbird's debug console
 
 ## Usage
 
 - **Automatic**: New incoming mail is classified automatically
-- **Manual**: Click the toolbar button → "Scan Current Folder" to scan all messages in the displayed folder
+- **Scan Folder**: Click the toolbar button → "Scan Current Folder" to classify all messages in the displayed folder
+- **Review Spam**: Click "Review Spam" to reclassify messages in Junk folders across all accounts and restore false positives to the inbox
+- **Review Decisions**: Click "Review Decisions" to see the last 20 classifications, mark corrections, and use "Refine Prompt" to have the model suggest system prompt improvements based on your feedback
