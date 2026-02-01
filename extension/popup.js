@@ -15,7 +15,9 @@ function updateProgressUI(progress, startTime) {
   const now = Date.now();
   const elapsed = (now - lastTime) / 1000;
   if (elapsed > 0 && progress.scanned > lastScanned) {
-    rate = (progress.scanned - lastScanned) / elapsed;
+    const instantRate = (progress.scanned - lastScanned) / elapsed;
+    // Smooth with exponential moving average (0.2 = slow, stable updates)
+    rate = rate === 0 ? instantRate : rate * 0.8 + instantRate * 0.2;
     lastScanned = progress.scanned;
     lastTime = now;
   }
