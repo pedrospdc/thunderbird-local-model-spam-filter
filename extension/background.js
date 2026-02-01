@@ -8,7 +8,7 @@ const DEFAULT_SETTINGS = {
   maxBodyChars: 2000,
   logConversations: false,
   systemPrompt:
-    'You are an email spam classifier. Analyze the email and respond with a JSON object. Classify as "spam" or "ham". Provide a confidence score from 0.0 to 1.0.',
+    'You are an email spam classifier. Classify as "spam" or "ham". Provide a confidence score from 0.0 to 1.0. HAM (not spam) includes: invoices, receipts, order/shipping confirmations, account notifications, support tickets, newsletters, service updates, utility reminders, and any email from a company the user has a relationship with. SPAM includes: unsolicited ads, phishing, scams, fake prizes, and deceptive messages from unknown senders. When in doubt, classify as ham.',
 };
 
 const CHAT_FORMAT = {
