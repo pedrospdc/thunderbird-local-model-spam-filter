@@ -14,8 +14,8 @@ async function loadSettings() {
   document.getElementById("ollamaUrl").value =
     s.ollamaUrl || "http://localhost:11434";
   document.getElementById("model").value =
-    s.model || "rosemarla/qwen3-classify";
-  document.getElementById("modelType").value = s.modelType || "classify";
+    s.model || "gemma3:4b";
+  document.getElementById("modelType").value = s.modelType || "chat";
   document.getElementById("systemPrompt").value =
     s.systemPrompt || DEFAULT_SYSTEM_PROMPT;
   document.getElementById("spamAction").value = s.spamAction || "junk";

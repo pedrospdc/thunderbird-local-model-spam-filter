@@ -1,7 +1,7 @@
 const DEFAULT_SETTINGS = {
   ollamaUrl: "http://localhost:11434",
-  model: "rosemarla/qwen3-classify",
-  modelType: "classify",
+  model: "gemma3:4b",
+  modelType: "chat",
   spamAction: "junk",
   confidenceThreshold: 0.5,
   concurrency: 4,

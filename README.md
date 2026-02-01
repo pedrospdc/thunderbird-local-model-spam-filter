@@ -20,10 +20,10 @@ Thunderbird Extension (JS)  →  Ollama API (localhost:11434)
 ### 1. Pull a model
 
 ```bash
-# Option A: Pre-built spam classifier (fast, 1.2GB)
-ollama pull rosemarla/qwen3-classify
+# Recommended: Good accuracy, fast on modern GPUs (~3GB)
+ollama pull gemma3:4b
 
-# Option B: General model with custom prompt (more flexible)
+# Alternative: Smaller but less accurate
 ollama pull qwen3:1.7b
 ```
 
@@ -63,8 +63,8 @@ Alternatively, for development, load it as a temporary add-on:
 Extension settings (Add-ons Manager → Ollama Spam Filter → Options):
 
 - **Ollama URL** — default `http://localhost:11434`
-- **Model** — `rosemarla/qwen3-classify` (default) or any Ollama model
-- **Model Type** — `classify` (binary 0/1 models) or `chat` (structured JSON via system prompt)
+- **Model** — `gemma3:4b` (default) or any Ollama model
+- **Model Type** — `chat` (structured JSON, default) or `classify` (binary 0/1 models)
 - **Spam Action** — Move to Junk (default), Move to Trash, or Delete Permanently
 - **Confidence Threshold** — 0.0 to 1.0
 - **Log classifications** — log email subject and model response to Thunderbird's debug console
