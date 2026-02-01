@@ -150,7 +150,7 @@ async function classifyMessage(messageId, settings) {
   if (settings.logConversations) {
     const classification = result.spam ? "SPAM" : "HAM";
     console.log(
-      `[AI Spam Filter] Subject: "${header.subject || "(no subject)"}" → ${classification} (confidence: ${result.confidence}) | Response: ${result.rawResponse}`,
+      `[Ollama Spam Filter] Subject: "${header.subject || "(no subject)"}" → ${classification} (confidence: ${result.confidence}) | Response: ${result.rawResponse}`,
     );
   }
 

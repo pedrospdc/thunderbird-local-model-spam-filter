@@ -60,7 +60,7 @@ Alternatively, for development, load it as a temporary add-on:
 
 ### 4. Configure
 
-Extension settings (Add-ons Manager → AI Spam Filter → Options):
+Extension settings (Add-ons Manager → Ollama Spam Filter → Options):
 
 - **Ollama URL** — default `http://localhost:11434`
 - **Model** — `rosemarla/qwen3-classify` (default) or any Ollama model
