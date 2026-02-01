@@ -14,7 +14,7 @@ async function loadSettings() {
   document.getElementById("ollamaUrl").value =
     s.ollamaUrl || "http://localhost:11434";
   document.getElementById("model").value =
-    s.model || "gemma3:4b";
+    s.model || "gemma3:12b";
   document.getElementById("modelType").value = s.modelType || "chat";
   document.getElementById("systemPrompt").value =
     s.systemPrompt || DEFAULT_SYSTEM_PROMPT;

@@ -1,11 +1,11 @@
 const DEFAULT_SETTINGS = {
   ollamaUrl: "http://localhost:11434",
-  model: "gemma3:4b",
+  model: "gemma3:12b",
   modelType: "chat",
   spamAction: "junk",
   confidenceThreshold: 0.5,
   concurrency: 4,
-  maxBodyChars: 2000,
+  maxBodyChars: 8000,
   logConversations: false,
   systemPrompt:
     'You are an email spam classifier. Classify as "spam" or "ham". Provide a confidence score from 0.0 to 1.0. HAM (not spam) includes: invoices, receipts, order/shipping confirmations, account notifications, support tickets, newsletters, service updates, utility reminders, and any email from a company the user has a relationship with. SPAM includes: unsolicited ads, phishing, scams, fake prizes, and deceptive messages from unknown senders. When in doubt, classify as ham.',
@@ -67,7 +67,7 @@ async function classifyViaGenerate(settings, emailText) {
       think: false,
       keep_alive: "24h",
       options: {
-        num_ctx: 2048,
+        num_ctx: 4096,
         num_gpu: 999,
         temperature: 0,
       },
@@ -135,7 +135,7 @@ async function classifyViaChat(settings, emailText) {
       format: CHAT_FORMAT,
       keep_alive: "24h",
       options: {
-        num_ctx: 2048,
+        num_ctx: 4096,
         num_gpu: 999,
       },
     }),
@@ -165,7 +165,9 @@ async function classifyMessage(messageId, settings) {
   if (body.length > settings.maxBodyChars) {
     body = body.slice(0, settings.maxBodyChars);
   }
-  const emailText = `Subject: ${header.subject || ""}\n\nBody: ${body}`;
+  const from = header.author || "";
+  const to = (header.recipients || []).join(", ");
+  const emailText = `From: ${from}\nTo: ${to}\nSubject: ${header.subject || ""}\n\nBody: ${body}`;
 
   let result;
   if (settings.modelType === "chat") {

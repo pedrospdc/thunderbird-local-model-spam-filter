@@ -20,8 +20,8 @@ Thunderbird Extension (JS)  →  Ollama API (localhost:11434)
 ### 1. Pull a model
 
 ```bash
-# Recommended: Good accuracy, fast on modern GPUs (~3GB)
-ollama pull gemma3:4b
+# Recommended: Good accuracy, fits in 16GB VRAM (~8GB)
+ollama pull gemma3:12b
 
 # Alternative: Smaller but less accurate
 ollama pull qwen3:1.7b
@@ -63,7 +63,7 @@ Alternatively, for development, load it as a temporary add-on:
 Extension settings (Add-ons Manager → Ollama Spam Filter → Options):
 
 - **Ollama URL** — default `http://localhost:11434`
-- **Model** — `gemma3:4b` (default) or any Ollama model
+- **Model** — `gemma3:12b` (default) or any Ollama model
 - **Model Type** — `chat` (structured JSON, default) or `classify` (binary 0/1 models)
 - **Spam Action** — Move to Junk (default), Move to Trash, or Delete Permanently
 - **Confidence Threshold** — 0.0 to 1.0
