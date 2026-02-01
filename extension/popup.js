@@ -171,4 +171,8 @@ stopReviewBtn.addEventListener("click", async () => {
   await messenger.runtime.sendMessage({ action: "stopReview" });
 });
 
+document.getElementById("feedbackBtn").addEventListener("click", () => {
+  messenger.tabs.create({ url: "feedback.html" });
+});
+
 restoreState();

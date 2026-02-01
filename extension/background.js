@@ -66,6 +66,18 @@ async function getSettings() {
   return { ...DEFAULT_SETTINGS, ...(settings || {}) };
 }
 
+async function logClassification(messageId, subject, from, classification, confidence) {
+  const { classificationLog = [] } = await messenger.storage.local.get("classificationLog");
+  classificationLog.push({
+    id: messageId, subject, from, classification, confidence,
+    userVerdict: null, timestamp: Date.now()
+  });
+  if (classificationLog.length > 20) {
+    classificationLog.splice(0, classificationLog.length - 20);
+  }
+  await messenger.storage.local.set({ classificationLog });
+}
+
 // Recursively extract plain text from a MessagePart MIME tree.
 function extractText(part) {
   if (part.contentType === "text/plain" && part.body) {
@@ -311,11 +323,9 @@ messenger.messages.onNewMailReceived.addListener(async (folder, messageList) => 
   for (const message of messageList.messages) {
     try {
       const result = await classifyMessage(message.id, settings);
-      if (
-        result &&
-        result.spam &&
-        result.confidence >= settings.confidenceThreshold
-      ) {
+      const cls = result && result.spam && result.confidence >= settings.confidenceThreshold ? "spam" : "ham";
+      await logClassification(message.id, message.subject || "", message.author || "", cls, result ? result.confidence : 0);
+      if (cls === "spam") {
         console.log(
           `Spam detected: "${message.subject}" (confidence: ${result.confidence})`,
         );
@@ -368,11 +378,9 @@ async function scanCurrentFolder() {
       const message = allMessages[idx++];
       try {
         const result = await classifyMessage(message.id, settings);
-        if (
-          result &&
-          result.spam &&
-          result.confidence >= settings.confidenceThreshold
-        ) {
+        const cls = result && result.spam && result.confidence >= settings.confidenceThreshold ? "spam" : "ham";
+        await logClassification(message.id, message.subject || "", message.author || "", cls, result ? result.confidence : 0);
+        if (cls === "spam") {
           await addTag(message.id, TAG_SPAM);
           await handleSpam(message.id, settings, folder.accountId);
           scanProgress.spamFound++;
@@ -430,11 +438,9 @@ async function reviewSpam() {
       const { message, accountId } = allMessages[idx++];
       try {
         const result = await classifyMessage(message.id, settings);
-        if (
-          !result ||
-          !result.spam ||
-          result.confidence < settings.confidenceThreshold
-        ) {
+        const cls = result && result.spam && result.confidence >= settings.confidenceThreshold ? "spam" : "ham";
+        await logClassification(message.id, message.subject || "", message.author || "", cls, result ? result.confidence : 0);
+        if (cls === "ham") {
           // Reclassified as ham — restore to inbox
           await removeTag(message.id, TAG_SPAM);
           await addTag(message.id, TAG_HAM);
@@ -512,5 +518,67 @@ messenger.runtime.onMessage.addListener(async (request) => {
       if (elapsed > 0) rate = (reviewProgress.scanned / elapsed).toFixed(1);
     }
     return { progress: reviewProgress, rate };
+  }
+  if (request.action === "getClassificationLog") {
+    const { classificationLog = [] } = await messenger.storage.local.get("classificationLog");
+    return classificationLog;
+  }
+  if (request.action === "setUserVerdict") {
+    const { classificationLog = [] } = await messenger.storage.local.get("classificationLog");
+    const idx = request.index;
+    if (idx >= 0 && idx < classificationLog.length) {
+      classificationLog[idx].userVerdict = request.verdict;
+      await messenger.storage.local.set({ classificationLog });
+    }
+    return { ok: true };
+  }
+  if (request.action === "refinePrompt") {
+    const { classificationLog = [] } = await messenger.storage.local.get("classificationLog");
+    const corrections = classificationLog.filter(
+      (e) => e.userVerdict !== null && e.userVerdict !== e.classification
+    );
+    if (corrections.length === 0) {
+      return { error: "No corrections to learn from." };
+    }
+    const settings = await getSettings();
+    const correctionLines = corrections.map(
+      (c) => `- Subject: "${c.subject}" | From: "${c.from}" | Model said: ${c.classification} | User says: ${c.userVerdict}`
+    ).join("\n");
+    const metaPrompt = `You are a prompt engineer. Below is the current system prompt used for email spam classification, followed by classification decisions the user disagreed with. Analyze the patterns and produce an improved system prompt that would correctly handle these cases. Return ONLY the new system prompt text, nothing else.
+
+Current prompt:
+${settings.systemPrompt}
+
+User corrections:
+${correctionLines}`;
+    const resp = await fetch(`${settings.ollamaUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: settings.model,
+        messages: [{ role: "user", content: metaPrompt }],
+        stream: false,
+        keep_alive: "24h",
+        options: {
+          num_ctx: settings.contextSize || 8192,
+          num_gpu: 999,
+        },
+      }),
+    });
+    if (!resp.ok) {
+      return { error: `Ollama request failed (${resp.status})` };
+    }
+    const data = await resp.json();
+    return {
+      currentPrompt: settings.systemPrompt,
+      proposedPrompt: data.message.content.trim(),
+      corrections,
+    };
+  }
+  if (request.action === "applyPrompt") {
+    const { settings = {} } = await messenger.storage.local.get("settings");
+    settings.systemPrompt = request.prompt;
+    await messenger.storage.local.set({ settings });
+    return { ok: true };
   }
 });

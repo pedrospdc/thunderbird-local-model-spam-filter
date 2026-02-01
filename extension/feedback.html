@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { padding: 16px; font-family: system-ui, sans-serif; max-width: 600px; font-size: 14px; }
+    h2 { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #ddd; }
+    th { background: #f5f5f5; font-weight: 600; }
+    tr:nth-child(even) { background: #fafafa; }
+    tr.corrected { background: #fff9e6; }
+    .verdict-btns button { padding: 2px 8px; cursor: pointer; border: 1px solid #ccc; border-radius: 3px; background: #f0f0f0; font-size: 12px; }
+    .verdict-btns button:hover { background: #e0e0e0; }
+    .verdict-btns button.active-agree { background: #c8e6c9; border-color: #4CAF50; }
+    .verdict-btns button.active-disagree { background: #ffcdd2; border-color: #F44336; }
+    #refineBtn { margin-top: 16px; padding: 8px 24px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; font-size: 14px; }
+    #refineBtn:hover { background: #e0e0e0; }
+    #refineBtn:disabled { opacity: 0.6; cursor: default; }
+    #refineArea { display: none; margin-top: 16px; }
+    #refineArea textarea { width: 100%; height: 200px; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: vertical; }
+    #refineArea .actions { margin-top: 8px; }
+    #refineArea .actions button { padding: 6px 20px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; margin-right: 8px; }
+    #applyBtn { background: #c8e6c9; border-color: #4CAF50; }
+    #applyBtn:hover { background: #a5d6a7; }
+    #dismissBtn { background: #f0f0f0; }
+    #dismissBtn:hover { background: #e0e0e0; }
+    #spinner { display: none; margin-top: 12px; color: #666; }
+    #emptyMsg { color: #666; margin-top: 12px; }
+    #status { margin-top: 12px; color: #333; }
+  </style>
+</head>
+<body>
+  <h2>Review Decisions</h2>
+  <p id="emptyMsg" style="display: none;">No classifications logged yet. Scan a folder or receive new mail first.</p>
+  <table id="logTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>Subject</th>
+        <th>From</th>
+        <th>Decision</th>
+        <th>Conf.</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody id="logBody"></tbody>
+  </table>
+  <button id="refineBtn" disabled>Refine Prompt</button>
+  <div id="spinner">Generating improved prompt...</div>
+  <div id="refineArea">
+    <h3>Proposed System Prompt</h3>
+    <textarea id="proposedPrompt" readonly></textarea>
+    <div class="actions">
+      <button id="applyBtn">Apply</button>
+      <button id="dismissBtn">Dismiss</button>
+    </div>
+  </div>
+  <div id="status"></div>
+  <script src="feedback.js"></script>
+</body>
+</html>
